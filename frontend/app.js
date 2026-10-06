@@ -9,7 +9,7 @@
 // =====================================================
 
 const API_URL =
-    "https://ieee-cis-qr-attendance.onrender.com";
+    "https://cis-attendance.onrender.com";
 
 
 // =====================================================
