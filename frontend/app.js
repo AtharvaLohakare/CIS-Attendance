@@ -1,25 +1,60 @@
-const API_URL = "https://cis-attendance.onrender.com";
+// =====================================================
+// IEEE CIS QR ATTENDANCE SYSTEM
+// APP.JS
+// =====================================================
 
 
 // =====================================================
-// CREATE SESSION
+// API
 // =====================================================
 
-async function createSession() {
-
-    const eventName =
-        document.getElementById("eventName").value.trim();
-
-    const message =
-        document.getElementById("sessionMessage");
+const API_URL =
+    "https://ieee-cis-qr-attendance.onrender.com";
 
 
-    if (!eventName) {
+// =====================================================
+// LOGIN
+// =====================================================
 
-        message.innerHTML =
-            `<div class="error">
-                Enter event name.
-            </div>`;
+async function login() {
+
+    const userIdElement =
+        document.getElementById("userId");
+
+    const passwordElement =
+        document.getElementById("password");
+
+    const messageElement =
+        document.getElementById("message");
+
+
+    if (!userIdElement || !passwordElement) {
+
+        console.error(
+            "Login input elements not found."
+        );
+
+        return;
+    }
+
+
+    const userId =
+        userIdElement.value.trim();
+
+    const password =
+        passwordElement.value;
+
+
+    if (!userId || !password) {
+
+        if (messageElement) {
+
+            messageElement.innerHTML = `
+                <div class="error">
+                    Please enter User ID and Password.
+                </div>
+            `;
+        }
 
         return;
     }
@@ -27,256 +62,433 @@ async function createSession() {
 
     try {
 
-        const response = await fetch(
-            API_URL + "/sessions",
-            {
-                method: "POST",
+        if (messageElement) {
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                body: JSON.stringify({
-                    event: eventName
-                })
-            }
-        );
-
-
-        const data = await response.json();
-
-
-        if (!response.ok) {
-
-            message.innerHTML =
-                `<div class="error">
-                    ${data.detail}
-                </div>`;
-
-            return;
+            messageElement.innerHTML = `
+                <div>
+                    Logging in...
+                </div>
+            `;
         }
 
 
-        localStorage.setItem(
-            "sessionId",
-            data.session_id
-        );
+        const response =
+            await fetch(
+                `${API_URL}/login`,
+                {
+                    method: "POST",
 
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
 
-        localStorage.setItem(
-            "sessionEvent",
-            data.event
-        );
-
-
-        document.getElementById(
-            "currentSession"
-        ).textContent = data.session_id;
-
-
-        document.getElementById(
-            "currentEvent"
-        ).textContent = data.event;
-
-
-        message.innerHTML =
-            `<div class="success">
-                ✅ Attendance session started.
-                <br>
-                Session ID: ${data.session_id}
-            </div>`;
-
-
-        loadAttendance();
-
-    } catch (error) {
-
-        console.error(error);
-
-        message.innerHTML =
-            `<div class="error">
-                ❌ Cannot connect to backend.
-            </div>`;
-    }
-}
-
-
-// =====================================================
-// LOAD CURRENT SESSION
-// =====================================================
-
-function loadCurrentSession() {
-
-    const sessionId =
-        localStorage.getItem("sessionId");
-
-    const event =
-        localStorage.getItem("sessionEvent");
-
-
-    if (sessionId) {
-
-        const element =
-            document.getElementById("currentSession");
-
-        if (element) {
-
-            element.textContent = sessionId;
-        }
-    }
-
-
-    if (event) {
-
-        const element =
-            document.getElementById("currentEvent");
-
-        if (element) {
-
-            element.textContent = event;
-        }
-    }
-}
-
-
-// =====================================================
-// LOAD ATTENDANCE
-// =====================================================
-
-async function loadAttendance() {
-
-    const sessionId =
-        localStorage.getItem("sessionId");
-
-
-    if (!sessionId) {
-
-        return;
-    }
-
-
-    try {
-
-        const response = await fetch(
-            API_URL +
-            "/attendance/" +
-            encodeURIComponent(sessionId)
-        );
-
-
-        const data = await response.json();
-
-
-        if (!response.ok) {
-
-            return;
-        }
-
-
-        document.getElementById(
-            "totalStudents"
-        ).textContent =
-            data.total_students;
-
-
-        document.getElementById(
-            "presentStudents"
-        ).textContent =
-            data.present;
-
-
-        document.getElementById(
-            "absentStudents"
-        ).textContent =
-            data.absent;
-
-
-        const list =
-            document.getElementById(
-                "attendanceList"
+                    body:
+                        JSON.stringify({
+                            user_id: userId,
+                            password: password
+                        })
+                }
             );
 
 
-        if (data.attendance.length === 0) {
+        let data = {};
 
-            list.innerHTML =
-                "No attendance marked yet.";
+        try {
+
+            data =
+                await response.json();
+
+        } catch (error) {
+
+            data = {};
+        }
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Invalid User ID or Password."
+            );
+        }
+
+
+        // =================================================
+        // SAVE LOGIN INFORMATION
+        // =================================================
+
+        sessionStorage.setItem(
+            "authToken",
+            data.token
+        );
+
+        sessionStorage.setItem(
+            "userId",
+            data.user_id
+        );
+
+        sessionStorage.setItem(
+            "userName",
+            data.name
+        );
+
+        sessionStorage.setItem(
+            "userRole",
+            data.role
+        );
+
+
+        // =================================================
+        // REDIRECT BASED ON ROLE
+        // =================================================
+
+        if (data.role === "HEAD") {
+
+            window.location.href =
+                "dashboard.html";
 
             return;
         }
 
 
-        list.innerHTML = "";
+        if (
+            data.role ===
+            "SESSION_CREATOR"
+        ) {
+
+            window.location.href =
+                "dashboard.html";
+
+            return;
+        }
 
 
-        data.attendance.forEach(
-            function(student) {
+        if (
+            data.role ===
+            "STUDENT"
+        ) {
 
-                const row =
-                    document.createElement("div");
+            window.location.href =
+                "student-dashboard.html";
 
-                row.className =
-                    "attendance-row";
-
-
-                row.innerHTML = `
-
-                    <span>
-                        <strong>
-                            ${student.name}
-                        </strong>
-                        <br>
-                        ${student.student_id}
-                    </span>
-
-                    <span>
-                        ${student.time}
-                        <br>
-                        <strong>
-                            ${student.status}
-                        </strong>
-                    </span>
-
-                `;
+            return;
+        }
 
 
-                list.appendChild(row);
+        // Unknown role
 
-            }
+        sessionStorage.clear();
+
+        throw new Error(
+            "Unknown user role."
         );
 
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Login error:",
+            error
+        );
+
+
+        if (messageElement) {
+
+            messageElement.innerHTML = `
+                <div class="error">
+                    ❌ ${escapeHtml(
+                        error.message
+                    )}
+                </div>
+            `;
+        }
     }
 }
 
 
 // =====================================================
-// DOWNLOAD EXCEL
+// LOGOUT
 // =====================================================
 
-function downloadExcel() {
+async function logout() {
 
-    window.open(
-        API_URL + "/download",
-        "_blank"
+    const token =
+        sessionStorage.getItem(
+            "authToken"
+        );
+
+
+    try {
+
+        if (token) {
+
+            await fetch(
+                `${API_URL}/logout`,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Authorization":
+                            `Bearer ${token}`
+                    }
+                }
+            );
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Logout error:",
+            error
+        );
+    }
+
+
+    sessionStorage.clear();
+
+
+    window.location.href =
+        "index.html";
+}
+
+
+// =====================================================
+// CHECK LOGIN
+// =====================================================
+
+function isLoggedIn() {
+
+    const token =
+        sessionStorage.getItem(
+            "authToken"
+        );
+
+    return !!token;
+}
+
+
+// =====================================================
+// GET CURRENT ROLE
+// =====================================================
+
+function getUserRole() {
+
+    return sessionStorage.getItem(
+        "userRole"
     );
 }
 
 
 // =====================================================
-// PAGE LOAD
+// GET CURRENT USER ID
+// =====================================================
+
+function getUserId() {
+
+    return sessionStorage.getItem(
+        "userId"
+    );
+}
+
+
+// =====================================================
+// GET CURRENT USER NAME
+// =====================================================
+
+function getUserName() {
+
+    return sessionStorage.getItem(
+        "userName"
+    );
+}
+
+
+// =====================================================
+// PROTECT PAGE
+// =====================================================
+
+function requireLogin() {
+
+    if (!isLoggedIn()) {
+
+        window.location.href =
+            "index.html";
+
+        return false;
+    }
+
+    return true;
+}
+
+
+// =====================================================
+// PROTECT HEAD PAGE
+// =====================================================
+
+function requireHead() {
+
+    const token =
+        sessionStorage.getItem(
+            "authToken"
+        );
+
+    const role =
+        sessionStorage.getItem(
+            "userRole"
+        );
+
+
+    if (
+        !token ||
+        role !== "HEAD"
+    ) {
+
+        window.location.href =
+            "index.html";
+
+        return false;
+    }
+
+
+    return true;
+}
+
+
+// =====================================================
+// PROTECT SESSION CREATOR PAGE
+// =====================================================
+
+function requireSessionCreator() {
+
+    const token =
+        sessionStorage.getItem(
+            "authToken"
+        );
+
+    const role =
+        sessionStorage.getItem(
+            "userRole"
+        );
+
+
+    if (
+        !token ||
+        (
+            role !== "HEAD" &&
+            role !== "SESSION_CREATOR"
+        )
+    ) {
+
+        window.location.href =
+            "index.html";
+
+        return false;
+    }
+
+
+    return true;
+}
+
+
+// =====================================================
+// PROTECT STUDENT PAGE
+// =====================================================
+
+function requireStudent() {
+
+    const token =
+        sessionStorage.getItem(
+            "authToken"
+        );
+
+    const role =
+        sessionStorage.getItem(
+            "userRole"
+        );
+
+
+    if (
+        !token ||
+        role !== "STUDENT"
+    ) {
+
+        window.location.href =
+            "index.html";
+
+        return false;
+    }
+
+
+    return true;
+}
+
+
+// =====================================================
+// HTML SAFETY
+// =====================================================
+
+function escapeHtml(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+
+        return "";
+    }
+
+
+    return String(value)
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+}
+
+
+// =====================================================
+// AUTO LOGIN FORM SUPPORT
 // =====================================================
 
 document.addEventListener(
     "DOMContentLoaded",
-    function() {
+    function () {
 
-        loadCurrentSession();
+        const loginForm =
+            document.getElementById(
+                "loginForm"
+            );
 
-        loadAttendance();
+
+        if (loginForm) {
+
+            loginForm.addEventListener(
+                "submit",
+                function (event) {
+
+                    event.preventDefault();
+
+                    login();
+                }
+            );
+        }
 
     }
 );

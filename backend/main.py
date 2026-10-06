@@ -2252,28 +2252,89 @@ def disable_session_creator(
 # =========================================================
 # STUDENT OWN PROFILE
 # =========================================================
-
 @app.get("/my-profile")
 def my_profile(
     authorization: str | None = Header(None)
 ):
-
     current_user = get_current_user(
         authorization
     )
 
-
     if current_user["role"] != "STUDENT":
-
         raise HTTPException(
             status_code=403,
             detail="Student access only"
         )
 
+    workbook = get_workbook()
 
-    return current_user
+    students = workbook["Students"]
+
+    student = None
+
+    for row in students.iter_rows(
+        min_row=2,
+        values_only=True
+    ):
+        if str(row[0]) == str(
+            current_user["user_id"]
+        ):
+            student = {
+                "student_id": row[0],
+                "name": row[1],
+                "roll_no": row[2],
+                "section": row[3],
+                "branch": row[4],
+                "email": row[5],
+                "registered_date": row[8]
+            }
+            break
+
+    workbook.close()
+
+    if not student:
+        raise HTTPException(
+            status_code=404,
+            detail="Student profile not found"
+        )
+
+    return student
 
 
+# =========================================================
+# STUDENT OWN QR CODE
+# =========================================================
+@app.get("/my-qr")
+def my_qr(
+    authorization: str | None = Header(None)
+):
+    current_user = get_current_user(
+        authorization
+    )
+
+    if current_user["role"] != "STUDENT":
+        raise HTTPException(
+            status_code=403,
+            detail="Student access only"
+        )
+
+    student_id = current_user["user_id"]
+
+    qr_path = (
+        QR_FOLDER /
+        f"{student_id}.png"
+    )
+
+    if not qr_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="QR code not found"
+        )
+
+    return FileResponse(
+        qr_path,
+        media_type="image/png"
+    )
 # =========================================================
 # STUDENT OWN ATTENDANCE
 # =========================================================

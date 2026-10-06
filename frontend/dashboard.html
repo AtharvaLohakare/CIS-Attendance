@@ -2,23 +2,15 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>IEEE CIS Dashboard</title>
 
     <link rel="stylesheet" href="style.css">
-
 </head>
 
-
 <body>
-
 
 <nav class="navbar">
 
@@ -35,13 +27,6 @@
             href="admin.html"
         >
             Register Student
-        </a>
-
-        <a
-            id="studentsLink"
-            href="students.html"
-        >
-            Students
         </a>
 
         <a href="scanner.html">
@@ -61,7 +46,6 @@
 
 
 <div class="container">
-
 
     <!-- =================================================
          USER INFORMATION
@@ -107,9 +91,7 @@
             Create Session
         </button>
 
-        <div
-            id="sessionMessage"
-        ></div>
+        <div id="sessionMessage"></div>
 
     </div>
 
@@ -129,25 +111,14 @@
         </h2>
 
         <p>
-
             Event:
-
-            <strong
-                id="currentEvent"
-            ></strong>
-
+            <strong id="currentEvent"></strong>
         </p>
 
         <p>
-
             Session ID:
-
-            <strong
-                id="currentSessionId"
-            ></strong>
-
+            <strong id="currentSessionId"></strong>
         </p>
-
 
         <a
             href="scanner.html"
@@ -174,24 +145,19 @@
             and download its Excel file.
         </p>
 
-
         <button
             onclick="loadSessions()"
         >
             Load Sessions
         </button>
 
-
-        <div
-            id="sessions"
-        ></div>
+        <div id="sessions"></div>
 
     </div>
 
 
     <!-- =================================================
          SELECTED SESSION
-         HIDDEN UNTIL A SESSION IS OPENED
     ================================================== -->
 
     <div
@@ -204,36 +170,19 @@
             Selected Meeting
         </h2>
 
-
         <p>
-
             Event:
-
-            <strong
-                id="selectedEvent"
-            ></strong>
-
+            <strong id="selectedEvent"></strong>
         </p>
-
 
         <p>
-
             Session ID:
-
-            <strong
-                id="selectedSessionId"
-            ></strong>
-
+            <strong id="selectedSessionId"></strong>
         </p>
 
-
-        <div
-            id="selectedAttendance"
-        ></div>
-
+        <div id="selectedAttendance"></div>
 
         <br>
-
 
         <button
             onclick="downloadSelectedExcel()"
@@ -259,23 +208,19 @@
             Give Session Creation Access
         </h2>
 
-
         <p>
             Only Head can give or revoke this permission.
         </p>
-
 
         <input
             id="creatorId"
             placeholder="Authority/User ID"
         >
 
-
         <input
             id="creatorName"
             placeholder="Name"
         >
-
 
         <input
             id="creatorEmail"
@@ -283,13 +228,11 @@
             placeholder="Email"
         >
 
-
         <input
             id="creatorPassword"
             type="password"
             placeholder="Create Password"
         >
-
 
         <button
             onclick="createSessionCreator()"
@@ -297,62 +240,48 @@
             Give Access
         </button>
 
-
-        <div
-            id="creatorMessage"
-        ></div>
-
+        <div id="creatorMessage"></div>
 
         <hr>
-
 
         <h3>
             Authorized Session Creators
         </h3>
 
-
-        <div
-            id="creatorsList"
-        ></div>
+        <div id="creatorsList"></div>
 
     </div>
-
 
 </div>
 
 
 <script>
 
-
-// =========================================================
-// API
-// =========================================================
+/* =====================================================
+   API
+===================================================== */
 
 const API_URL =
-    "https://cis-attendance.onrender.com";
+    "https://ieee-cis-qr-attendance.onrender.com";
 
+
+/* =====================================================
+   AUTH DATA
+===================================================== */
 
 const TOKEN =
-    sessionStorage.getItem(
-        "authToken"
-    );
-
+    sessionStorage.getItem("authToken");
 
 const ROLE =
-    sessionStorage.getItem(
-        "userRole"
-    );
-
+    sessionStorage.getItem("userRole");
 
 const USER_NAME =
-    sessionStorage.getItem(
-        "userName"
-    );
+    sessionStorage.getItem("userName");
 
 
-// =========================================================
-// AUTH CHECK
-// =========================================================
+/* =====================================================
+   AUTH CHECK
+===================================================== */
 
 if (
     !TOKEN ||
@@ -364,19 +293,17 @@ if (
 
     window.location.href =
         "index.html";
-
 }
 
 
-// =========================================================
-// SHOW USER
-// =========================================================
+/* =====================================================
+   SHOW USER
+===================================================== */
 
 document.getElementById(
     "userName"
 ).textContent =
     USER_NAME || "";
-
 
 document.getElementById(
     "userRole"
@@ -384,13 +311,11 @@ document.getElementById(
     ROLE || "";
 
 
-// =========================================================
-// ROLE BASED UI
-// =========================================================
+/* =====================================================
+   ROLE BASED UI
+===================================================== */
 
-if (
-    ROLE === "HEAD"
-) {
+if (ROLE === "HEAD") {
 
     document.getElementById(
         "accessManagement"
@@ -403,19 +328,12 @@ if (
         "registerLink"
     ).style.display =
         "none";
-
-
-    document.getElementById(
-        "studentsLink"
-    ).style.display =
-        "none";
-
 }
 
 
-// =========================================================
-// CREATE SESSION
-// =========================================================
+/* =====================================================
+   CREATE SESSION
+===================================================== */
 
 async function createSession() {
 
@@ -423,7 +341,6 @@ async function createSession() {
         document.getElementById(
             "eventName"
         ).value.trim();
-
 
     const message =
         document.getElementById(
@@ -433,14 +350,13 @@ async function createSession() {
 
     if (!event) {
 
-        message.innerHTML =
-
-            `<div class="error">
+        message.innerHTML = `
+            <div class="error">
                 Enter meeting/event name.
-            </div>`;
+            </div>
+        `;
 
         return;
-
     }
 
 
@@ -450,24 +366,20 @@ async function createSession() {
             await fetch(
                 `${API_URL}/sessions`,
                 {
-
                     method: "POST",
 
                     headers: {
-
                         "Content-Type":
                             "application/json",
 
                         "Authorization":
                             `Bearer ${TOKEN}`
-
                     },
 
                     body:
                         JSON.stringify({
                             event: event
                         })
-
                 }
             );
 
@@ -482,16 +394,15 @@ async function createSession() {
                 data.detail ||
                 "Session creation failed."
             );
-
         }
 
 
-        // Save current session
+        /* Save session */
+
         sessionStorage.setItem(
             "sessionId",
             data.session_id
         );
-
 
         sessionStorage.setItem(
             "sessionEvent",
@@ -499,7 +410,8 @@ async function createSession() {
         );
 
 
-        // Show current session
+        /* Show current session */
+
         document.getElementById(
             "currentSession"
         ).style.display =
@@ -518,11 +430,11 @@ async function createSession() {
             data.session_id;
 
 
-        message.innerHTML =
-
-            `<div class="success">
+        message.innerHTML = `
+            <div class="success">
                 Session created successfully.
-            </div>`;
+            </div>
+        `;
 
 
         document.getElementById(
@@ -530,26 +442,25 @@ async function createSession() {
         ).value = "";
 
 
-        // Refresh meetings
         loadSessions();
 
 
     } catch (error) {
 
-        message.innerHTML =
+        console.error(error);
 
-            `<div class="error">
-                ❌ ${error.message}
-            </div>`;
-
+        message.innerHTML = `
+            <div class="error">
+                ❌ ${escapeHtml(error.message)}
+            </div>
+        `;
     }
-
 }
 
 
-// =========================================================
-// LOAD SESSIONS
-// =========================================================
+/* =====================================================
+   LOAD SESSIONS
+===================================================== */
 
 async function loadSessions() {
 
@@ -559,14 +470,10 @@ async function loadSessions() {
             await fetch(
                 `${API_URL}/sessions`,
                 {
-
                     headers: {
-
                         "Authorization":
                             `Bearer ${TOKEN}`
-
                     }
-
                 }
             );
 
@@ -581,7 +488,6 @@ async function loadSessions() {
                 data.detail ||
                 "Could not load sessions."
             );
-
         }
 
 
@@ -597,12 +503,10 @@ async function loadSessions() {
                 "<p>No sessions found.</p>";
 
             return;
-
         }
 
 
         container.innerHTML =
-
             data.map(
                 session => `
 
@@ -664,7 +568,9 @@ async function loadSessions() {
                         <button
                             onclick="
                                 viewAttendance(
-                                    '${session.session_id}'
+                                    '${escapeJs(
+                                        session.session_id
+                                    )}'
                                 )
                             "
                         >
@@ -674,14 +580,14 @@ async function loadSessions() {
 
                         ${
                             ROLE === "HEAD"
-
                             ?
-
                             `
                             <button
                                 onclick="
                                     deleteSession(
-                                        '${session.session_id}',
+                                        '${escapeJs(
+                                            session.session_id
+                                        )}',
                                         '${escapeJs(
                                             session.event
                                         )}'
@@ -694,9 +600,7 @@ async function loadSessions() {
                                 Delete Meeting
                             </button>
                             `
-
                             :
-
                             ""
                         }
 
@@ -712,20 +616,18 @@ async function loadSessions() {
 
         document.getElementById(
             "sessions"
-        ).innerHTML =
-
-            `<div class="error">
-                ${error.message}
-            </div>`;
-
+        ).innerHTML = `
+            <div class="error">
+                ${escapeHtml(error.message)}
+            </div>
+        `;
     }
-
 }
 
 
-// =========================================================
-// VIEW ATTENDANCE
-// =========================================================
+/* =====================================================
+   VIEW ATTENDANCE
+===================================================== */
 
 async function viewAttendance(
     sessionId
@@ -733,19 +635,14 @@ async function viewAttendance(
 
     try {
 
-        // Get attendance
         const response =
             await fetch(
-                `${API_URL}/attendance/${sessionId}`,
+                `${API_URL}/attendance/${encodeURIComponent(sessionId)}`,
                 {
-
                     headers: {
-
                         "Authorization":
                             `Bearer ${TOKEN}`
-
                     }
-
                 }
             );
 
@@ -760,11 +657,9 @@ async function viewAttendance(
                 data.detail ||
                 "Could not load attendance."
             );
-
         }
 
 
-        // Show selected session
         document.getElementById(
             "selectedSession"
         ).style.display =
@@ -789,18 +684,15 @@ async function viewAttendance(
             );
 
 
-        // =================================================
-        // NO ATTENDANCE
-        // =================================================
+        /* NO ATTENDANCE */
 
         if (
             !data.attendance ||
             data.attendance.length === 0
         ) {
 
-            attendanceContainer.innerHTML =
+            attendanceContainer.innerHTML = `
 
-                `
                 <div
                     style="
                         padding:15px;
@@ -831,16 +723,14 @@ async function viewAttendance(
                     </p>
 
                 </div>
-                `;
+
+            `;
 
             return;
-
         }
 
 
-        // =================================================
-        // ATTENDANCE TABLE
-        // =================================================
+        /* ATTENDANCE TABLE */
 
         let html = `
 
@@ -906,6 +796,7 @@ async function viewAttendance(
                     </thead>
 
                     <tbody>
+
         `;
 
 
@@ -971,7 +862,6 @@ async function viewAttendance(
                     </tr>
 
                 `;
-
             }
         );
 
@@ -1022,7 +912,6 @@ async function viewAttendance(
             html;
 
 
-        // Scroll to selected meeting
         document.getElementById(
             "selectedSession"
         ).scrollIntoView({
@@ -1035,15 +924,13 @@ async function viewAttendance(
         alert(
             error.message
         );
-
     }
-
 }
 
 
-// =========================================================
-// DOWNLOAD SELECTED MEETING EXCEL
-// =========================================================
+/* =====================================================
+   DOWNLOAD SELECTED MEETING EXCEL
+===================================================== */
 
 async function downloadSelectedExcel() {
 
@@ -1066,7 +953,6 @@ async function downloadSelectedExcel() {
         );
 
         return;
-
     }
 
 
@@ -1076,14 +962,10 @@ async function downloadSelectedExcel() {
             await fetch(
                 `${API_URL}/download/${encodeURIComponent(sessionId)}`,
                 {
-
                     headers: {
-
                         "Authorization":
                             `Bearer ${TOKEN}`
-
                     }
-
                 }
             );
 
@@ -1109,7 +991,6 @@ async function downloadSelectedExcel() {
             throw new Error(
                 errorMessage
             );
-
         }
 
 
@@ -1124,23 +1005,17 @@ async function downloadSelectedExcel() {
 
 
         const a =
-            document.createElement(
-                "a"
-            );
+            document.createElement("a");
 
 
         a.href = url;
 
 
         a.download =
-            `${safeDownloadName(
-                event
-            )}.xlsx`;
+            `${safeDownloadName(event)}.xlsx`;
 
 
-        document.body.appendChild(
-            a
-        );
+        document.body.appendChild(a);
 
 
         a.click();
@@ -1149,9 +1024,7 @@ async function downloadSelectedExcel() {
         a.remove();
 
 
-        window.URL.revokeObjectURL(
-            url
-        );
+        window.URL.revokeObjectURL(url);
 
 
     } catch (error) {
@@ -1159,16 +1032,14 @@ async function downloadSelectedExcel() {
         alert(
             error.message
         );
-
     }
-
 }
 
 
-// =========================================================
-// DELETE MEETING
-// HEAD ONLY
-// =========================================================
+/* =====================================================
+   DELETE MEETING
+   HEAD ONLY
+===================================================== */
 
 async function deleteSession(
     sessionId,
@@ -1182,20 +1053,19 @@ async function deleteSession(
         );
 
         return;
-
     }
 
 
     const confirmed =
         confirm(
-            `Are you sure you want to delete "${eventName}"?\n\nThis will delete the meeting attendance data and its Excel file.`
+            `Are you sure you want to delete "${eventName}"?
+
+This will delete the meeting attendance data and its Excel file.`
         );
 
 
     if (!confirmed) {
-
         return;
-
     }
 
 
@@ -1205,16 +1075,12 @@ async function deleteSession(
             await fetch(
                 `${API_URL}/sessions/${encodeURIComponent(sessionId)}`,
                 {
-
                     method: "DELETE",
 
                     headers: {
-
                         "Authorization":
                             `Bearer ${TOKEN}`
-
                     }
-
                 }
             );
 
@@ -1229,11 +1095,9 @@ async function deleteSession(
                 data.detail ||
                 "Could not delete meeting."
             );
-
         }
 
 
-        // Hide selected session
         document.getElementById(
             "selectedSession"
         ).style.display =
@@ -1242,7 +1106,8 @@ async function deleteSession(
 
         document.getElementById(
             "selectedAttendance"
-        ).innerHTML = "";
+        ).innerHTML =
+            "";
 
 
         alert(
@@ -1250,7 +1115,6 @@ async function deleteSession(
         );
 
 
-        // Refresh sessions
         loadSessions();
 
 
@@ -1259,22 +1123,18 @@ async function deleteSession(
         alert(
             error.message
         );
-
     }
-
 }
 
 
-// =========================================================
-// CREATE SESSION CREATOR
-// =========================================================
+/* =====================================================
+   CREATE SESSION CREATOR
+===================================================== */
 
 async function createSessionCreator() {
 
     if (ROLE !== "HEAD") {
-
         return;
-
     }
 
 
@@ -1315,14 +1175,13 @@ async function createSessionCreator() {
         !password
     ) {
 
-        message.innerHTML =
-
-            `<div class="error">
+        message.innerHTML = `
+            <div class="error">
                 Fill all fields.
-            </div>`;
+            </div>
+        `;
 
         return;
-
     }
 
 
@@ -1332,36 +1191,23 @@ async function createSessionCreator() {
             await fetch(
                 `${API_URL}/session-creators`,
                 {
-
                     method: "POST",
 
                     headers: {
-
                         "Content-Type":
                             "application/json",
 
                         "Authorization":
                             `Bearer ${TOKEN}`
-
                     },
 
                     body:
                         JSON.stringify({
-
-                            user_id:
-                                userId,
-
-                            name:
-                                name,
-
-                            email:
-                                email,
-
-                            password:
-                                password
-
+                            user_id: userId,
+                            name: name,
+                            email: email,
+                            password: password
                         })
-
                 }
             );
 
@@ -1376,31 +1222,27 @@ async function createSessionCreator() {
                 data.detail ||
                 "Could not give access."
             );
-
         }
 
 
-        message.innerHTML =
-
-            `<div class="success">
+        message.innerHTML = `
+            <div class="success">
                 Session creation access granted.
-            </div>`;
+            </div>
+        `;
 
 
         document.getElementById(
             "creatorId"
         ).value = "";
 
-
         document.getElementById(
             "creatorName"
         ).value = "";
 
-
         document.getElementById(
             "creatorEmail"
         ).value = "";
-
 
         document.getElementById(
             "creatorPassword"
@@ -1412,27 +1254,23 @@ async function createSessionCreator() {
 
     } catch (error) {
 
-        message.innerHTML =
-
-            `<div class="error">
-                ${error.message}
-            </div>`;
-
+        message.innerHTML = `
+            <div class="error">
+                ${escapeHtml(error.message)}
+            </div>
+        `;
     }
-
 }
 
 
-// =========================================================
-// LOAD SESSION CREATORS
-// =========================================================
+/* =====================================================
+   LOAD SESSION CREATORS
+===================================================== */
 
 async function loadCreators() {
 
     if (ROLE !== "HEAD") {
-
         return;
-
     }
 
 
@@ -1442,14 +1280,10 @@ async function loadCreators() {
             await fetch(
                 `${API_URL}/session-creators`,
                 {
-
                     headers: {
-
                         "Authorization":
                             `Bearer ${TOKEN}`
-
                     }
-
                 }
             );
 
@@ -1470,7 +1304,6 @@ async function loadCreators() {
                 data.detail ||
                 "Could not load session creators."
             );
-
         }
 
 
@@ -1480,12 +1313,10 @@ async function loadCreators() {
                 "<p>No authorized members.</p>";
 
             return;
-
         }
 
 
         container.innerHTML =
-
             data.map(
                 user => `
 
@@ -1532,9 +1363,7 @@ async function loadCreators() {
 
                     ${
                         user.active === "YES"
-
                         ?
-
                         `
                         <button
                             onclick="
@@ -1548,9 +1377,7 @@ async function loadCreators() {
                             Revoke Access
                         </button>
                         `
-
                         :
-
                         ""
                     }
 
@@ -1564,20 +1391,18 @@ async function loadCreators() {
 
         document.getElementById(
             "creatorsList"
-        ).innerHTML =
-
-            `<div class="error">
-                ${error.message}
-            </div>`;
-
+        ).innerHTML = `
+            <div class="error">
+                ${escapeHtml(error.message)}
+            </div>
+        `;
     }
-
 }
 
 
-// =========================================================
-// REVOKE ACCESS
-// =========================================================
+/* =====================================================
+   REVOKE ACCESS
+===================================================== */
 
 async function revokeAccess(
     userId
@@ -1588,9 +1413,7 @@ async function revokeAccess(
             "Are you sure you want to revoke this access?"
         )
     ) {
-
         return;
-
     }
 
 
@@ -1600,16 +1423,12 @@ async function revokeAccess(
             await fetch(
                 `${API_URL}/session-creators/${encodeURIComponent(userId)}`,
                 {
-
                     method: "DELETE",
 
                     headers: {
-
                         "Authorization":
                             `Bearer ${TOKEN}`
-
                     }
-
                 }
             );
 
@@ -1624,7 +1443,6 @@ async function revokeAccess(
                 data.detail ||
                 "Could not revoke access."
             );
-
         }
 
 
@@ -1636,15 +1454,13 @@ async function revokeAccess(
         alert(
             error.message
         );
-
     }
-
 }
 
 
-// =========================================================
-// LOGOUT
-// =========================================================
+/* =====================================================
+   LOGOUT
+===================================================== */
 
 async function logout() {
 
@@ -1653,16 +1469,12 @@ async function logout() {
         await fetch(
             `${API_URL}/logout`,
             {
-
                 method: "POST",
 
                 headers: {
-
                     "Authorization":
                         `Bearer ${TOKEN}`
-
                 }
-
             }
         );
 
@@ -1674,13 +1486,12 @@ async function logout() {
 
     window.location.href =
         "index.html";
-
 }
 
 
-// =========================================================
-// HTML SAFETY
-// =========================================================
+/* =====================================================
+   HTML SAFETY
+===================================================== */
 
 function escapeHtml(
     value
@@ -1690,45 +1501,22 @@ function escapeHtml(
         value === null ||
         value === undefined
     ) {
-
         return "";
-
     }
 
 
     return String(value)
-
-        .replace(
-            /&/g,
-            "&amp;"
-        )
-
-        .replace(
-            /</g,
-            "&lt;"
-        )
-
-        .replace(
-            />/g,
-            "&gt;"
-        )
-
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 
-// =========================================================
-// JAVASCRIPT STRING SAFETY
-// =========================================================
+/* =====================================================
+   JAVASCRIPT STRING SAFETY
+===================================================== */
 
 function escapeJs(
     value
@@ -1738,35 +1526,20 @@ function escapeJs(
         value === null ||
         value === undefined
     ) {
-
         return "";
-
     }
 
 
     return String(value)
-
-        .replace(
-            /\\/g,
-            "\\\\"
-        )
-
-        .replace(
-            /'/g,
-            "\\'"
-        )
-
-        .replace(
-            /"/g,
-            '\\"'
-        );
-
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '\\"');
 }
 
 
-// =========================================================
-// DOWNLOAD FILE NAME
-// =========================================================
+/* =====================================================
+   DOWNLOAD FILE NAME
+===================================================== */
 
 function safeDownloadName(
     value
@@ -1775,39 +1548,30 @@ function safeDownloadName(
     return String(
         value || "Meeting"
     )
-
     .replace(
         /[<>:"/\\|?*]+/g,
         "_"
     )
-
     .replace(
         /\s+/g,
         "_"
     );
-
 }
 
 
-// =========================================================
-// INITIAL LOAD
-// =========================================================
+/* =====================================================
+   INITIAL LOAD
+===================================================== */
 
-if (
-    ROLE === "HEAD"
-) {
-
+if (ROLE === "HEAD") {
     loadCreators();
-
 }
-
 
 loadSessions();
 
+loadCurrentSession();
 
 </script>
 
-
 </body>
-
 </html>
