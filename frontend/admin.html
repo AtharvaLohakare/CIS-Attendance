@@ -2,18 +2,10 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register Student</title>
-
     <link rel="stylesheet" href="style.css">
-
 </head>
 
 <body>
@@ -23,27 +15,11 @@
     <h2>IEEE CIS</h2>
 
     <div>
-
-        <a href="dashboard.html">
-            Dashboard
-        </a>
-
-        <a href="admin.html">
-            Register Student
-        </a>
-
-        <a href="students.html">
-            Students
-        </a>
-
-        <a href="scanner.html">
-            Scan QR
-        </a>
-
-        <a href="#" onclick="logout()">
-            Logout
-        </a>
-
+        <a href="dashboard.html">Dashboard</a>
+        <a href="admin.html">Register Student</a>
+        <a href="students.html">Students</a>
+        <a href="scanner.html">Scan QR</a>
+        <a href="#" onclick="logout()">Logout</a>
     </div>
 
 </nav>
@@ -58,7 +34,6 @@
         <p>
             Head can register students and create their permanent QR.
         </p>
-
 
         <input
             id="studentId"
@@ -97,7 +72,7 @@
             placeholder="Create Student Password"
         >
 
-        <button onclick="registerStudent()">
+        <button id="registerBtn" onclick="registerStudent()">
             Register Student
         </button>
 
@@ -109,7 +84,7 @@
     <div
         id="qrResult"
         class="qr-result"
-        style="display:none;"
+        style="display: none;"
     >
 
         <h2>Student Registered Successfully</h2>
@@ -140,7 +115,8 @@
 
 <script>
 
-const API_URL = "https://cis-attendance.onrender.com";
+const API_URL =
+    "https://cis-attendance.onrender.com";
 
 
 const token =
@@ -150,15 +126,18 @@ const role =
     sessionStorage.getItem("userRole");
 
 
-if (
-    !token ||
-    role !== "HEAD"
-) {
+/* Only HEAD can access this page */
 
-    window.location.href =
-        "index.html";
+if (!token || role !== "HEAD") {
+
+    window.location.href = "index.html";
+
 }
 
+
+/* =========================================
+   REGISTER STUDENT
+========================================= */
 
 async function registerStudent() {
 
@@ -183,10 +162,14 @@ async function registerStudent() {
     const password =
         document.getElementById("password").value;
 
-
     const message =
         document.getElementById("message");
 
+    const button =
+        document.getElementById("registerBtn");
+
+
+    /* Validation */
 
     if (
         !studentId ||
@@ -198,44 +181,44 @@ async function registerStudent() {
         !password
     ) {
 
-        message.innerHTML =
-            `<div class="error">
+        message.innerHTML = `
+            <div class="error">
                 Please fill all fields.
-            </div>`;
+            </div>
+        `;
 
         return;
     }
 
 
+    button.disabled = true;
+    button.textContent = "Registering...";
+
+
     try {
 
-        const response = await fetch(
-            `${API_URL}/students`,
-            {
-                method: "POST",
+        const response =
+            await fetch(
+                `${API_URL}/students`,
+                {
+                    method: "POST",
 
-                headers: {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
 
-                    "Content-Type":
-                        "application/json",
-
-                    "Authorization":
-                        `Bearer ${token}`
-                },
-
-                body: JSON.stringify({
-
-                    student_id: studentId,
-                    name: name,
-                    roll_no: rollNo,
-                    section: section,
-                    branch: branch,
-                    email: email,
-                    password: password
-
-                })
-            }
-        );
+                    body: JSON.stringify({
+                        student_id: studentId,
+                        name: name,
+                        roll_no: rollNo,
+                        section: section,
+                        branch: branch,
+                        email: email,
+                        password: password
+                    })
+                }
+            );
 
 
         const data =
@@ -248,85 +231,106 @@ async function registerStudent() {
                 data.detail ||
                 "Student registration failed."
             );
+
         }
 
 
-        message.innerHTML =
-            `<div class="success">
-                Student registered successfully.
-            </div>`;
+        /* Success */
 
-
-        const qrUrl =
-            `${API_URL}/qr/${data.student_id}`;
-
-
-        document.getElementById(
-            "qrImage"
-        ).src = qrUrl;
-
-
-        document.getElementById(
-            "downloadQR"
-        ).href = qrUrl;
-
-
-        document.getElementById(
-            "studentInfo"
-        ).innerHTML = `
-            <strong>Name:</strong> ${data.name}<br>
-            <strong>Roll No:</strong> ${data.roll_no}<br>
-            <strong>Section:</strong> ${data.section}<br>
-            <strong>Branch:</strong> ${data.branch}<br>
-            <strong>Attendance ID:</strong> ${data.student_id}
+        message.innerHTML = `
+            <div class="success">
+                ✅ Student registered successfully.
+            </div>
         `;
 
 
-        document.getElementById(
-            "qrResult"
-        ).style.display = "block";
+        /* QR URL */
+
+        const qrUrl =
+            `${API_URL}/qr/${encodeURIComponent(data.student_id)}`;
 
 
-        document.getElementById(
-            "studentId"
-        ).value = "";
+        /* Show QR */
 
-        document.getElementById(
-            "name"
-        ).value = "";
+        document.getElementById("qrImage").src =
+            qrUrl;
 
-        document.getElementById(
-            "rollNo"
-        ).value = "";
+        document.getElementById("downloadQR").href =
+            qrUrl;
 
-        document.getElementById(
-            "section"
-        ).value = "";
 
-        document.getElementById(
-            "branch"
-        ).value = "";
+        /* Student information */
 
-        document.getElementById(
-            "email"
-        ).value = "";
+        document.getElementById("studentInfo").innerHTML = `
 
-        document.getElementById(
-            "password"
-        ).value = "";
+            <strong>Name:</strong>
+            ${data.name || name}
+
+            <br>
+
+            <strong>Roll No:</strong>
+            ${data.roll_no || rollNo}
+
+            <br>
+
+            <strong>Section:</strong>
+            ${data.section || section}
+
+            <br>
+
+            <strong>Branch:</strong>
+            ${data.branch || branch}
+
+            <br>
+
+            <strong>Attendance ID:</strong>
+            ${data.student_id}
+
+        `;
+
+
+        /* Display QR section */
+
+        document.getElementById("qrResult").style.display =
+            "block";
+
+
+        /* Clear form */
+
+        document.getElementById("studentId").value = "";
+        document.getElementById("name").value = "";
+        document.getElementById("rollNo").value = "";
+        document.getElementById("section").value = "";
+        document.getElementById("branch").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("password").value = "";
 
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Registration Error:",
+            error
+        );
 
-        message.innerHTML =
-            `<div class="error">
+        message.innerHTML = `
+            <div class="error">
                 ❌ ${error.message}
-            </div>`;
+            </div>
+        `;
+
     }
+
+
+    button.disabled = false;
+    button.textContent = "Register Student";
+
 }
 
+
+/* =========================================
+   LOGOUT
+========================================= */
 
 async function logout() {
 
@@ -338,22 +342,25 @@ async function logout() {
                 method: "POST",
 
                 headers: {
-                    "Authorization":
-                        `Bearer ${token}`
+                    "Authorization": `Bearer ${token}`
                 }
             }
         );
 
     } catch (error) {
 
-        console.log(error);
+        console.log(
+            "Logout error:",
+            error
+        );
+
     }
 
 
     sessionStorage.clear();
 
-    window.location.href =
-        "index.html";
+    window.location.href = "index.html";
+
 }
 
 </script>

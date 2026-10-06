@@ -64,9 +64,11 @@ async function loadStudents() {
     try {
 
         const response =
-            await fetch(
-                API_URL + "/students"
-            );
+            fetch(API_URL + "/students", {
+                headers: {
+                    "Authorization": "Bearer " + sessionStorage.getItem("authToken")
+                }
+            })
 
 
         const data =
