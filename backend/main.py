@@ -407,7 +407,13 @@ def create_excel():
         EXCEL_FILE
     )
 
+# Create required files/folders when backend starts
+QR_FOLDER.mkdir(exist_ok=True)
+DATA_FOLDER.mkdir(exist_ok=True)
 
+if not EXCEL_FILE.exists():
+    create_excel()
+    print("attendance.xlsx created successfully!")
 # =========================================================
 # GET WORKBOOK
 # =========================================================
