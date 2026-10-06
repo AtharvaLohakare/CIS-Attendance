@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
 
     <meta
@@ -17,6 +16,7 @@
         href="style.css"
     >
 
+    <!-- QR Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode"></script>
 
 </head>
@@ -44,41 +44,60 @@
 
 <div class="container">
 
+    <!-- SESSION INFORMATION -->
+
     <div class="card">
 
         <h1>QR Attendance Scanner</h1>
 
         <p>
             Event:
-            <strong id="eventName">
-                -
-            </strong>
+            <strong id="eventName">-</strong>
         </p>
 
         <p>
             Session:
-            <strong id="sessionId">
-                -
-            </strong>
+            <strong id="sessionId">-</strong>
         </p>
 
     </div>
 
 
-    <div class="scanner">
+    <!-- CAMERA -->
 
-        <div id="reader"></div>
+    <div class="card">
+
+        <h2>Scan Student QR</h2>
+
+        <p>
+            Point the camera at the student's permanent QR code.
+        </p>
+
+        <div
+            id="reader"
+            style="width: 100%; max-width: 500px; margin: auto;"
+        ></div>
 
     </div>
 
+
+    <!-- RESULT -->
 
     <div
         id="result"
         class="card"
     >
-        Waiting for QR...
+
+        <h3>Ready to Scan</h3>
+
+        <p>
+            Waiting for QR...
+        </p>
+
     </div>
 
+
+    <!-- INSTRUCTIONS -->
 
     <div class="card">
 
@@ -87,15 +106,23 @@
         </h3>
 
         <p>
-            Keep the camera open.
+            📷 Keep the camera open.
         </p>
 
         <p>
-            Scan one student's QR.
+            1️⃣ Scan one student's QR.
         </p>
 
         <p>
-            After it says Done, immediately scan the next QR.
+            2️⃣ Wait for "Attendance Done".
+        </p>
+
+        <p>
+            3️⃣ Scan the next student's QR.
+        </p>
+
+        <p>
+            ✅ You do not need to reopen the camera after every student.
         </p>
 
     </div>
@@ -105,9 +132,17 @@
 
 <script>
 
-const API_URL =
-    "https://cis-attendance.onrender.com";
+/* =========================================
+   BACKEND
+========================================= */
 
+const API_URL =
+    "https://ieee-cis-qr-attendance.onrender.com";
+
+
+/* =========================================
+   LOGIN
+========================================= */
 
 const TOKEN =
     sessionStorage.getItem("authToken");
@@ -116,12 +151,20 @@ const ROLE =
     sessionStorage.getItem("userRole");
 
 
+/* =========================================
+   CURRENT SESSION
+========================================= */
+
 const SESSION_ID =
     sessionStorage.getItem("sessionId");
 
 const SESSION_EVENT =
     sessionStorage.getItem("sessionEvent");
 
+
+/* =========================================
+   ACCESS CONTROL
+========================================= */
 
 if (
     !TOKEN ||
@@ -133,8 +176,13 @@ if (
 
     window.location.href =
         "index.html";
+
 }
 
+
+/* =========================================
+   SESSION CHECK
+========================================= */
 
 if (!SESSION_ID) {
 
@@ -144,8 +192,13 @@ if (!SESSION_ID) {
 
     window.location.href =
         "dashboard.html";
+
 }
 
+
+/* =========================================
+   DISPLAY SESSION
+========================================= */
 
 document.getElementById(
     "eventName"
@@ -159,6 +212,10 @@ document.getElementById(
     SESSION_ID || "-";
 
 
+/* =========================================
+   SCANNER VARIABLES
+========================================= */
+
 let processing = false;
 
 let lastToken = "";
@@ -166,9 +223,16 @@ let lastToken = "";
 let lastScanTime = 0;
 
 
-/* QR SCANNED */
+/* =========================================
+   QR SUCCESS
+========================================= */
 
 async function onScanSuccess(decodedText) {
+
+    /*
+       Prevent multiple callbacks
+       while one QR is being processed.
+    */
 
     if (processing) {
         return;
@@ -180,44 +244,59 @@ async function onScanSuccess(decodedText) {
 
 
     /*
-       Prevent same QR from being processed
-       repeatedly by the camera for 2 seconds.
+       Prevent the same QR from being
+       processed repeatedly.
     */
 
     if (
         decodedText === lastToken &&
-        now - lastScanTime < 2000
+        now - lastScanTime < 2500
     ) {
 
         return;
+
     }
 
 
     processing = true;
 
-    lastToken = decodedText;
+    lastToken =
+        decodedText;
 
-    lastScanTime = now;
+    lastScanTime =
+        now;
 
 
     const result =
-        document.getElementById(
-            "result"
-        );
+        document.getElementById("result");
 
 
-    result.innerHTML =
-        `<div class="warning">
-            Processing attendance...
-        </div>`;
+    result.innerHTML = `
+        <div class="warning">
+
+            <h3>
+                Processing Attendance...
+            </h3>
+
+            <p>
+                Please wait.
+            </p>
+
+        </div>
+    `;
 
 
     try {
+
+        /* =================================
+           SEND QR TO BACKEND
+        ================================= */
 
         const response =
             await fetch(
                 `${API_URL}/attendance`,
                 {
+
                     method: "POST",
 
                     headers: {
@@ -227,6 +306,7 @@ async function onScanSuccess(decodedText) {
 
                         "Authorization":
                             `Bearer ${TOKEN}`
+
                     },
 
                     body: JSON.stringify({
@@ -238,6 +318,7 @@ async function onScanSuccess(decodedText) {
                             decodedText
 
                     })
+
                 }
             );
 
@@ -246,108 +327,230 @@ async function onScanSuccess(decodedText) {
             await response.json();
 
 
+        /* =================================
+           BACKEND ERROR
+        ================================= */
+
         if (!response.ok) {
 
             throw new Error(
                 data.detail ||
                 "Attendance failed."
             );
+
         }
 
 
+        /* =================================
+           DUPLICATE
+        ================================= */
+
         if (data.duplicate) {
 
-            result.innerHTML =
-                `<div class="warning">
-                    ⚠️ ${data.message}
-                </div>`;
+            result.innerHTML = `
 
-        } else {
-
-            result.innerHTML =
-                `<div class="success">
+                <div class="warning">
 
                     <h2>
-                        ✓ Attendance Done
+                        ⚠️ Already Marked
                     </h2>
 
-                    <strong>
-                        ${data.student.name}
-                    </strong>
+                    <p>
+                        ${data.message}
+                    </p>
 
-                    <br>
+                </div>
 
-                    Roll No:
-                    ${data.student.roll_no}
+            `;
 
-                    <br>
+        }
 
-                    Section:
-                    ${data.student.section}
 
-                    <br>
+        /* =================================
+           SUCCESS
+        ================================= */
 
-                    Branch:
-                    ${data.student.branch}
+        else {
 
-                </div>`;
+            const student =
+                data.student || {};
+
+
+            result.innerHTML = `
+
+                <div class="success">
+
+                    <h2>
+                        ✅ Attendance Done
+                    </h2>
+
+                    <p>
+
+                        <strong>
+                            ${student.name || "Student"}
+                        </strong>
+
+                    </p>
+
+                    <p>
+                        Roll No:
+                        ${student.roll_no || "-"}
+                    </p>
+
+                    <p>
+                        Section:
+                        ${student.section || "-"}
+                    </p>
+
+                    <p>
+                        Branch:
+                        ${student.branch || "-"}
+                    </p>
+
+                    <p>
+                        Status:
+                        <strong>
+                            PRESENT
+                        </strong>
+                    </p>
+
+                </div>
+
+            `;
+
         }
 
 
         /*
-           VERY IMPORTANT:
+           IMPORTANT:
 
-           We do NOT stop the camera.
-           We do NOT clear the scanner.
-           We simply unlock scanning again.
+           We DO NOT stop the camera.
+
+           We DO NOT clear the scanner.
+
+           We simply allow the next scan.
         */
 
-        setTimeout(() => {
+        setTimeout(
+            function () {
 
-            processing = false;
+                processing = false;
 
-        }, 500);
+                result.innerHTML = `
+
+                    <div>
+
+                        <h3>
+                            📷 Ready for Next Student
+                        </h3>
+
+                        <p>
+                            Scan the next QR code.
+                        </p>
+
+                    </div>
+
+                `;
+
+            },
+            1200
+        );
 
 
-    } catch (error) {
-
-        console.error(error);
-
-
-        result.innerHTML =
-            `<div class="error">
-                ❌ ${error.message}
-            </div>`;
-
-
-        setTimeout(() => {
-
-            processing = false;
-
-        }, 700);
     }
+
+
+    /* =================================
+       ERROR
+    ================================= */
+
+    catch (error) {
+
+        console.error(
+            "Attendance Error:",
+            error
+        );
+
+
+        result.innerHTML = `
+
+            <div class="error">
+
+                <h3>
+                    ❌ Attendance Failed
+                </h3>
+
+                <p>
+                    ${error.message}
+                </p>
+
+            </div>
+
+        `;
+
+
+        /*
+           Unlock scanner again.
+        */
+
+        setTimeout(
+            function () {
+
+                processing = false;
+
+                result.innerHTML = `
+
+                    <div>
+
+                        <h3>
+                            📷 Ready to Scan
+                        </h3>
+
+                        <p>
+                            Scan the QR again.
+                        </p>
+
+                    </div>
+
+                `;
+
+            },
+            1500
+        );
+
+    }
+
 }
 
 
-/* QR ERROR */
+/* =========================================
+   QR SCAN FAILURE
+========================================= */
 
 function onScanFailure(errorMessage) {
 
     /*
-       Ignore normal camera scanning failures.
-       html5-qrcode calls this continuously.
+       Ignore normal scanning failures.
+
+       The library calls this repeatedly
+       while looking for a QR code.
     */
 
 }
 
 
-/* START CAMERA */
+/* =========================================
+   START QR SCANNER
+========================================= */
 
 const scanner =
     new Html5QrcodeScanner(
+
         "reader",
+
         {
-            fps: 15,
+
+            fps: 10,
 
             qrbox: {
                 width: 280,
@@ -359,10 +562,16 @@ const scanner =
             showTorchButtonIfSupported: true,
 
             showZoomSliderIfSupported: true
+
         },
+
         false
     );
 
+
+/* =========================================
+   START
+========================================= */
 
 scanner.render(
     onScanSuccess,
@@ -370,7 +579,9 @@ scanner.render(
 );
 
 
-/* LOGOUT */
+/* =========================================
+   LOGOUT
+========================================= */
 
 async function logout() {
 
@@ -379,24 +590,40 @@ async function logout() {
         await fetch(
             `${API_URL}/logout`,
             {
+
                 method: "POST",
 
                 headers: {
+
                     "Authorization":
                         `Bearer ${TOKEN}`
+
                 }
+
             }
         );
 
-    } catch (error) {}
+    }
+
+    catch (error) {
+
+        console.log(
+            "Logout error:",
+            error
+        );
+
+    }
+
 
     sessionStorage.clear();
 
     window.location.href =
         "index.html";
+
 }
 
 </script>
 
 </body>
+
 </html>
