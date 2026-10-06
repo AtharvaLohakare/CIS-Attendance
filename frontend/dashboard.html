@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>IEEE CIS Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+
+<body>
+
+
+<nav class="navbar">
+
+    <h2>IEEE CIS</h2>
+
+    <div>
+
+        <a href="dashboard.html">
+            Dashboard
+        </a>
+
+        <a
+            id="registerLink"
+            href="admin.html"
+        >
+            Register Student
+        </a>
+
+        <a
+            id="studentsLink"
+            href="students.html"
+        >
+            Students
+        </a>
+
+        <a href="scanner.html">
+            Scan QR
+        </a>
+
+        <a
+            href="#"
+            onclick="logout()"
+        >
+            Logout
+        </a>
+
+    </div>
+
+</nav>
+
+
+<div class="container">
+
+
+    <!-- =================================================
+         USER INFORMATION
+    ================================================== -->
+
+    <div class="card">
+
+        <h1>
+            Attendance Dashboard
+        </h1>
+
+        <p>
+            Welcome,
+            <strong id="userName"></strong>
+        </p>
+
+        <p>
+            Role:
+            <strong id="userRole"></strong>
+        </p>
+
+    </div>
+
+
+    <!-- =================================================
+         CREATE SESSION
+    ================================================== -->
+
+    <div class="card">
+
+        <h2>
+            Create Attendance Session
+        </h2>
+
+        <input
+            id="eventName"
+            placeholder="Meeting / Event Name"
+        >
+
+        <button
+            onclick="createSession()"
+        >
+            Create Session
+        </button>
+
+        <div
+            id="sessionMessage"
+        ></div>
+
+    </div>
+
+
+    <!-- =================================================
+         CURRENT SESSION
+    ================================================== -->
+
+    <div
+        id="currentSession"
+        class="card"
+        style="display:none;"
+    >
+
+        <h2>
+            Current Session
+        </h2>
+
+        <p>
+
+            Event:
+
+            <strong
+                id="currentEvent"
+            ></strong>
+
+        </p>
+
+        <p>
+
+            Session ID:
+
+            <strong
+                id="currentSessionId"
+            ></strong>
+
+        </p>
+
+
+        <a
+            href="scanner.html"
+            class="btn"
+        >
+            Open QR Scanner
+        </a>
+
+    </div>
+
+
+    <!-- =================================================
+         ATTENDANCE REPORT / SESSIONS
+    ================================================== -->
+
+    <div class="card">
+
+        <h2>
+            Attendance Report
+        </h2>
+
+        <p>
+            Select a meeting to view its attendance
+            and download its Excel file.
+        </p>
+
+
+        <button
+            onclick="loadSessions()"
+        >
+            Load Sessions
+        </button>
+
+
+        <div
+            id="sessions"
+        ></div>
+
+    </div>
+
+
+    <!-- =================================================
+         SELECTED SESSION
+         HIDDEN UNTIL A SESSION IS OPENED
+    ================================================== -->
+
+    <div
+        id="selectedSession"
+        class="card"
+        style="display:none;"
+    >
+
+        <h2>
+            Selected Meeting
+        </h2>
+
+
+        <p>
+
+            Event:
+
+            <strong
+                id="selectedEvent"
+            ></strong>
+
+        </p>
+
+
+        <p>
+
+            Session ID:
+
+            <strong
+                id="selectedSessionId"
+            ></strong>
+
+        </p>
+
+
+        <div
+            id="selectedAttendance"
+        ></div>
+
+
+        <br>
+
+
+        <button
+            onclick="downloadSelectedExcel()"
+        >
+            Download Excel
+        </button>
+
+    </div>
+
+
+    <!-- =================================================
+         HEAD ONLY
+         SESSION CREATOR ACCESS
+    ================================================== -->
+
+    <div
+        id="accessManagement"
+        class="card"
+        style="display:none;"
+    >
+
+        <h2>
+            Give Session Creation Access
+        </h2>
+
+
+        <p>
+            Only Head can give or revoke this permission.
+        </p>
+
+
+        <input
+            id="creatorId"
+            placeholder="Authority/User ID"
+        >
+
+
+        <input
+            id="creatorName"
+            placeholder="Name"
+        >
+
+
+        <input
+            id="creatorEmail"
+            type="email"
+            placeholder="Email"
+        >
+
+
+        <input
+            id="creatorPassword"
+            type="password"
+            placeholder="Create Password"
+        >
+
+
+        <button
+            onclick="createSessionCreator()"
+        >
+            Give Access
+        </button>
+
+
+        <div
+            id="creatorMessage"
+        ></div>
+
+
+        <hr>
+
+
+        <h3>
+            Authorized Session Creators
+        </h3>
+
+
+        <div
+            id="creatorsList"
+        ></div>
+
+    </div>
+
+
+</div>
+
+
+<script>
+
+
+// =========================================================
+// API
+// =========================================================
+
+const API_URL =
+    "http://127.0.0.1:8000";
+
+
+const TOKEN =
+    sessionStorage.getItem(
+        "authToken"
+    );
+
+
+const ROLE =
+    sessionStorage.getItem(
+        "userRole"
+    );
+
+
+const USER_NAME =
+    sessionStorage.getItem(
+        "userName"
+    );
+
+
+// =========================================================
+// AUTH CHECK
+// =========================================================
+
+if (
+    !TOKEN ||
+    (
+        ROLE !== "HEAD" &&
+        ROLE !== "SESSION_CREATOR"
+    )
+) {
+
+    window.location.href =
+        "index.html";
+
+}
+
+
+// =========================================================
+// SHOW USER
+// =========================================================
+
+document.getElementById(
+    "userName"
+).textContent =
+    USER_NAME || "";
+
+
+document.getElementById(
+    "userRole"
+).textContent =
+    ROLE || "";
+
+
+// =========================================================
+// ROLE BASED UI
+// =========================================================
+
+if (
+    ROLE === "HEAD"
+) {
+
+    document.getElementById(
+        "accessManagement"
+    ).style.display =
+        "block";
+
+} else {
+
+    document.getElementById(
+        "registerLink"
+    ).style.display =
+        "none";
+
+
+    document.getElementById(
+        "studentsLink"
+    ).style.display =
+        "none";
+
+}
+
+
+// =========================================================
+// CREATE SESSION
+// =========================================================
+
+async function createSession() {
+
+    const event =
+        document.getElementById(
+            "eventName"
+        ).value.trim();
+
+
+    const message =
+        document.getElementById(
+            "sessionMessage"
+        );
+
+
+    if (!event) {
+
+        message.innerHTML =
+
+            `<div class="error">
+                Enter meeting/event name.
+            </div>`;
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/sessions`,
+                {
+
+                    method: "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json",
+
+                        "Authorization":
+                            `Bearer ${TOKEN}`
+
+                    },
+
+                    body:
+                        JSON.stringify({
+                            event: event
+                        })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Session creation failed."
+            );
+
+        }
+
+
+        // Save current session
+        sessionStorage.setItem(
+            "sessionId",
+            data.session_id
+        );
+
+
+        sessionStorage.setItem(
+            "sessionEvent",
+            data.event
+        );
+
+
+        // Show current session
+        document.getElementById(
+            "currentSession"
+        ).style.display =
+            "block";
+
+
+        document.getElementById(
+            "currentEvent"
+        ).textContent =
+            data.event;
+
+
+        document.getElementById(
+            "currentSessionId"
+        ).textContent =
+            data.session_id;
+
+
+        message.innerHTML =
+
+            `<div class="success">
+                Session created successfully.
+            </div>`;
+
+
+        document.getElementById(
+            "eventName"
+        ).value = "";
+
+
+        // Refresh meetings
+        loadSessions();
+
+
+    } catch (error) {
+
+        message.innerHTML =
+
+            `<div class="error">
+                ❌ ${error.message}
+            </div>`;
+
+    }
+
+}
+
+
+// =========================================================
+// LOAD SESSIONS
+// =========================================================
+
+async function loadSessions() {
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/sessions`,
+                {
+
+                    headers: {
+
+                        "Authorization":
+                            `Bearer ${TOKEN}`
+
+                    }
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Could not load sessions."
+            );
+
+        }
+
+
+        const container =
+            document.getElementById(
+                "sessions"
+            );
+
+
+        if (!data.length) {
+
+            container.innerHTML =
+                "<p>No sessions found.</p>";
+
+            return;
+
+        }
+
+
+        container.innerHTML =
+
+            data.map(
+                session => `
+
+                <div
+                    class="attendance-row"
+                    style="
+                        margin-top:10px;
+                        padding:15px;
+                        border:1px solid #ddd;
+                        border-radius:8px;
+                    "
+                >
+
+                    <div>
+
+                        <strong>
+                            ${escapeHtml(
+                                session.event
+                            )}
+                        </strong>
+
+                        <br>
+
+                        Session ID:
+                        ${escapeHtml(
+                            session.session_id
+                        )}
+
+                        <br>
+
+                        Date:
+                        ${escapeHtml(
+                            session.date
+                        )}
+
+                        <br>
+
+                        Start Time:
+                        ${escapeHtml(
+                            session.start_time
+                        )}
+
+                        <br>
+
+                        Created By:
+                        ${escapeHtml(
+                            session.created_by
+                        )}
+
+                    </div>
+
+
+                    <div
+                        style="
+                            margin-top:10px;
+                        "
+                    >
+
+                        <button
+                            onclick="
+                                viewAttendance(
+                                    '${session.session_id}'
+                                )
+                            "
+                        >
+                            Open Session
+                        </button>
+
+
+                        ${
+                            ROLE === "HEAD"
+
+                            ?
+
+                            `
+                            <button
+                                onclick="
+                                    deleteSession(
+                                        '${session.session_id}',
+                                        '${escapeJs(
+                                            session.event
+                                        )}'
+                                    )
+                                "
+                                style="
+                                    margin-left:8px;
+                                "
+                            >
+                                Delete Meeting
+                            </button>
+                            `
+
+                            :
+
+                            ""
+                        }
+
+                    </div>
+
+                </div>
+
+            `
+            ).join("");
+
+
+    } catch (error) {
+
+        document.getElementById(
+            "sessions"
+        ).innerHTML =
+
+            `<div class="error">
+                ${error.message}
+            </div>`;
+
+    }
+
+}
+
+
+// =========================================================
+// VIEW ATTENDANCE
+// =========================================================
+
+async function viewAttendance(
+    sessionId
+) {
+
+    try {
+
+        // Get attendance
+        const response =
+            await fetch(
+                `${API_URL}/attendance/${sessionId}`,
+                {
+
+                    headers: {
+
+                        "Authorization":
+                            `Bearer ${TOKEN}`
+
+                    }
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Could not load attendance."
+            );
+
+        }
+
+
+        // Show selected session
+        document.getElementById(
+            "selectedSession"
+        ).style.display =
+            "block";
+
+
+        document.getElementById(
+            "selectedEvent"
+        ).textContent =
+            data.event || "Meeting";
+
+
+        document.getElementById(
+            "selectedSessionId"
+        ).textContent =
+            data.session_id;
+
+
+        const attendanceContainer =
+            document.getElementById(
+                "selectedAttendance"
+            );
+
+
+        // =================================================
+        // NO ATTENDANCE
+        // =================================================
+
+        if (
+            !data.attendance ||
+            data.attendance.length === 0
+        ) {
+
+            attendanceContainer.innerHTML =
+
+                `
+                <div
+                    style="
+                        padding:15px;
+                        border:1px solid #ddd;
+                        border-radius:8px;
+                    "
+                >
+
+                    <p>
+                        <strong>
+                            No attendance recorded yet.
+                        </strong>
+                    </p>
+
+                    <p>
+                        Total Students:
+                        ${data.total_students}
+                    </p>
+
+                    <p>
+                        Present:
+                        0
+                    </p>
+
+                    <p>
+                        Absent:
+                        ${data.absent}
+                    </p>
+
+                </div>
+                `;
+
+            return;
+
+        }
+
+
+        // =================================================
+        // ATTENDANCE TABLE
+        // =================================================
+
+        let html = `
+
+            <div
+                style="
+                    overflow-x:auto;
+                "
+            >
+
+                <table
+                    border="1"
+                    cellpadding="8"
+                    cellspacing="0"
+                    style="
+                        width:100%;
+                        border-collapse:collapse;
+                        margin-top:15px;
+                    "
+                >
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Sr. No.
+                            </th>
+
+                            <th>
+                                Name
+                            </th>
+
+                            <th>
+                                Branch
+                            </th>
+
+                            <th>
+                                Section
+                            </th>
+
+                            <th>
+                                Roll No.
+                            </th>
+
+                            <th>
+                                Email
+                            </th>
+
+                            <th>
+                                Date
+                            </th>
+
+                            <th>
+                                Time
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+        `;
+
+
+        data.attendance.forEach(
+            (student, index) => {
+
+                html += `
+
+                    <tr>
+
+                        <td>
+                            ${index + 1}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                student.name
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                student.branch || ""
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                student.section || ""
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                student.roll_no || ""
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                student.email || ""
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                student.date || ""
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                student.time || ""
+                            )}
+                        </td>
+
+                        <td>
+                            ${escapeHtml(
+                                student.status || ""
+                            )}
+                        </td>
+
+                    </tr>
+
+                `;
+
+            }
+        );
+
+
+        html += `
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <div
+                style="
+                    margin-top:15px;
+                    padding:15px;
+                    border:1px solid #ddd;
+                    border-radius:8px;
+                "
+            >
+
+                <strong>
+                    Attendance Summary
+                </strong>
+
+                <br><br>
+
+                Total Students:
+                ${data.total_students}
+
+                <br>
+
+                Present:
+                ${data.present}
+
+                <br>
+
+                Absent:
+                ${data.absent}
+
+            </div>
+
+        `;
+
+
+        attendanceContainer.innerHTML =
+            html;
+
+
+        // Scroll to selected meeting
+        document.getElementById(
+            "selectedSession"
+        ).scrollIntoView({
+            behavior: "smooth"
+        });
+
+
+    } catch (error) {
+
+        alert(
+            error.message
+        );
+
+    }
+
+}
+
+
+// =========================================================
+// DOWNLOAD SELECTED MEETING EXCEL
+// =========================================================
+
+async function downloadSelectedExcel() {
+
+    const sessionId =
+        document.getElementById(
+            "selectedSessionId"
+        ).textContent.trim();
+
+
+    const event =
+        document.getElementById(
+            "selectedEvent"
+        ).textContent.trim();
+
+
+    if (!sessionId) {
+
+        alert(
+            "Please open a meeting first."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/download/${encodeURIComponent(sessionId)}`,
+                {
+
+                    headers: {
+
+                        "Authorization":
+                            `Bearer ${TOKEN}`
+
+                    }
+
+                }
+            );
+
+
+        if (!response.ok) {
+
+            let errorMessage =
+                "Download failed.";
+
+
+            try {
+
+                const data =
+                    await response.json();
+
+                errorMessage =
+                    data.detail ||
+                    errorMessage;
+
+            } catch (e) {}
+
+
+            throw new Error(
+                errorMessage
+            );
+
+        }
+
+
+        const blob =
+            await response.blob();
+
+
+        const url =
+            window.URL.createObjectURL(
+                blob
+            );
+
+
+        const a =
+            document.createElement(
+                "a"
+            );
+
+
+        a.href = url;
+
+
+        a.download =
+            `${safeDownloadName(
+                event
+            )}.xlsx`;
+
+
+        document.body.appendChild(
+            a
+        );
+
+
+        a.click();
+
+
+        a.remove();
+
+
+        window.URL.revokeObjectURL(
+            url
+        );
+
+
+    } catch (error) {
+
+        alert(
+            error.message
+        );
+
+    }
+
+}
+
+
+// =========================================================
+// DELETE MEETING
+// HEAD ONLY
+// =========================================================
+
+async function deleteSession(
+    sessionId,
+    eventName
+) {
+
+    if (ROLE !== "HEAD") {
+
+        alert(
+            "Only Head can delete a meeting."
+        );
+
+        return;
+
+    }
+
+
+    const confirmed =
+        confirm(
+            `Are you sure you want to delete "${eventName}"?\n\nThis will delete the meeting attendance data and its Excel file.`
+        );
+
+
+    if (!confirmed) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/sessions/${encodeURIComponent(sessionId)}`,
+                {
+
+                    method: "DELETE",
+
+                    headers: {
+
+                        "Authorization":
+                            `Bearer ${TOKEN}`
+
+                    }
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Could not delete meeting."
+            );
+
+        }
+
+
+        // Hide selected session
+        document.getElementById(
+            "selectedSession"
+        ).style.display =
+            "none";
+
+
+        document.getElementById(
+            "selectedAttendance"
+        ).innerHTML = "";
+
+
+        alert(
+            "Meeting deleted successfully."
+        );
+
+
+        // Refresh sessions
+        loadSessions();
+
+
+    } catch (error) {
+
+        alert(
+            error.message
+        );
+
+    }
+
+}
+
+
+// =========================================================
+// CREATE SESSION CREATOR
+// =========================================================
+
+async function createSessionCreator() {
+
+    if (ROLE !== "HEAD") {
+
+        return;
+
+    }
+
+
+    const userId =
+        document.getElementById(
+            "creatorId"
+        ).value.trim();
+
+
+    const name =
+        document.getElementById(
+            "creatorName"
+        ).value.trim();
+
+
+    const email =
+        document.getElementById(
+            "creatorEmail"
+        ).value.trim();
+
+
+    const password =
+        document.getElementById(
+            "creatorPassword"
+        ).value;
+
+
+    const message =
+        document.getElementById(
+            "creatorMessage"
+        );
+
+
+    if (
+        !userId ||
+        !name ||
+        !email ||
+        !password
+    ) {
+
+        message.innerHTML =
+
+            `<div class="error">
+                Fill all fields.
+            </div>`;
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/session-creators`,
+                {
+
+                    method: "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json",
+
+                        "Authorization":
+                            `Bearer ${TOKEN}`
+
+                    },
+
+                    body:
+                        JSON.stringify({
+
+                            user_id:
+                                userId,
+
+                            name:
+                                name,
+
+                            email:
+                                email,
+
+                            password:
+                                password
+
+                        })
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Could not give access."
+            );
+
+        }
+
+
+        message.innerHTML =
+
+            `<div class="success">
+                Session creation access granted.
+            </div>`;
+
+
+        document.getElementById(
+            "creatorId"
+        ).value = "";
+
+
+        document.getElementById(
+            "creatorName"
+        ).value = "";
+
+
+        document.getElementById(
+            "creatorEmail"
+        ).value = "";
+
+
+        document.getElementById(
+            "creatorPassword"
+        ).value = "";
+
+
+        loadCreators();
+
+
+    } catch (error) {
+
+        message.innerHTML =
+
+            `<div class="error">
+                ${error.message}
+            </div>`;
+
+    }
+
+}
+
+
+// =========================================================
+// LOAD SESSION CREATORS
+// =========================================================
+
+async function loadCreators() {
+
+    if (ROLE !== "HEAD") {
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/session-creators`,
+                {
+
+                    headers: {
+
+                        "Authorization":
+                            `Bearer ${TOKEN}`
+
+                    }
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        const container =
+            document.getElementById(
+                "creatorsList"
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Could not load session creators."
+            );
+
+        }
+
+
+        if (!data.length) {
+
+            container.innerHTML =
+                "<p>No authorized members.</p>";
+
+            return;
+
+        }
+
+
+        container.innerHTML =
+
+            data.map(
+                user => `
+
+                <div
+                    class="student-row"
+                    style="
+                        margin-top:10px;
+                        padding:15px;
+                        border:1px solid #ddd;
+                        border-radius:8px;
+                    "
+                >
+
+                    <div>
+
+                        <strong>
+                            ${escapeHtml(
+                                user.name
+                            )}
+                        </strong>
+
+                        <br>
+
+                        ID:
+                        ${escapeHtml(
+                            user.user_id
+                        )}
+
+                        <br>
+
+                        ${escapeHtml(
+                            user.email
+                        )}
+
+                        <br>
+
+                        Status:
+                        ${escapeHtml(
+                            user.active
+                        )}
+
+                    </div>
+
+
+                    ${
+                        user.active === "YES"
+
+                        ?
+
+                        `
+                        <button
+                            onclick="
+                                revokeAccess(
+                                    '${escapeJs(
+                                        user.user_id
+                                    )}'
+                                )
+                            "
+                        >
+                            Revoke Access
+                        </button>
+                        `
+
+                        :
+
+                        ""
+                    }
+
+                </div>
+
+            `
+            ).join("");
+
+
+    } catch (error) {
+
+        document.getElementById(
+            "creatorsList"
+        ).innerHTML =
+
+            `<div class="error">
+                ${error.message}
+            </div>`;
+
+    }
+
+}
+
+
+// =========================================================
+// REVOKE ACCESS
+// =========================================================
+
+async function revokeAccess(
+    userId
+) {
+
+    if (
+        !confirm(
+            "Are you sure you want to revoke this access?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/session-creators/${encodeURIComponent(userId)}`,
+                {
+
+                    method: "DELETE",
+
+                    headers: {
+
+                        "Authorization":
+                            `Bearer ${TOKEN}`
+
+                    }
+
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Could not revoke access."
+            );
+
+        }
+
+
+        loadCreators();
+
+
+    } catch (error) {
+
+        alert(
+            error.message
+        );
+
+    }
+
+}
+
+
+// =========================================================
+// LOGOUT
+// =========================================================
+
+async function logout() {
+
+    try {
+
+        await fetch(
+            `${API_URL}/logout`,
+            {
+
+                method: "POST",
+
+                headers: {
+
+                    "Authorization":
+                        `Bearer ${TOKEN}`
+
+                }
+
+            }
+        );
+
+    } catch (error) {}
+
+
+    sessionStorage.clear();
+
+
+    window.location.href =
+        "index.html";
+
+}
+
+
+// =========================================================
+// HTML SAFETY
+// =========================================================
+
+function escapeHtml(
+    value
+) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+
+        return "";
+
+    }
+
+
+    return String(value)
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
+
+}
+
+
+// =========================================================
+// JAVASCRIPT STRING SAFETY
+// =========================================================
+
+function escapeJs(
+    value
+) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+
+        return "";
+
+    }
+
+
+    return String(value)
+
+        .replace(
+            /\\/g,
+            "\\\\"
+        )
+
+        .replace(
+            /'/g,
+            "\\'"
+        )
+
+        .replace(
+            /"/g,
+            '\\"'
+        );
+
+}
+
+
+// =========================================================
+// DOWNLOAD FILE NAME
+// =========================================================
+
+function safeDownloadName(
+    value
+) {
+
+    return String(
+        value || "Meeting"
+    )
+
+    .replace(
+        /[<>:"/\\|?*]+/g,
+        "_"
+    )
+
+    .replace(
+        /\s+/g,
+        "_"
+    );
+
+}
+
+
+// =========================================================
+// INITIAL LOAD
+// =========================================================
+
+if (
+    ROLE === "HEAD"
+) {
+
+    loadCreators();
+
+}
+
+
+loadSessions();
+
+
+</script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Registered Students</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<div class="navbar">
+
+    <h2>IEEE CIS Attendance</h2>
+
+    <div>
+        <a href="index.html">Dashboard</a>
+        <a href="admin.html">Register</a>
+        <a href="students.html">Students</a>
+        <a href="scanner.html">Scanner</a>
+    </div>
+
+</div>
+
+
+<div class="container">
+
+    <h1>Registered Students</h1>
+
+
+    <div class="card">
+
+        <h2>
+            Total Students:
+            <span id="count">0</span>
+        </h2>
+
+        <div id="studentList">
+            Loading...
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const API_URL =
+    "http://127.0.0.1:8000";
+
+
+async function loadStudents() {
+
+    try {
+
+        const response =
+            await fetch(
+                API_URL + "/students"
+            );
+
+
+        const data =
+            await response.json();
+
+
+        document.getElementById(
+            "count"
+        ).textContent =
+            data.total;
+
+
+        const list =
+            document.getElementById(
+                "studentList"
+            );
+
+
+        list.innerHTML = "";
+
+
+        data.students.forEach(
+            function(student) {
+
+                const row =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                row.className =
+                    "student-row";
+
+
+                row.innerHTML = `
+
+                    <div>
+
+                        <strong>
+                            ${student.name}
+                        </strong>
+
+                        <br>
+
+                        Student ID:
+                        ${student.student_id}
+
+                        <br>
+
+                        Email:
+                        ${student.email || "-"}
+
+                    </div>
+
+
+                    <a
+                        href="${API_URL}/qr/${encodeURIComponent(student.student_id)}"
+                        target="_blank"
+                        class="btn"
+                    >
+                        View QR
+                    </a>
+
+                `;
+
+
+                list.appendChild(row);
+
+            }
+        );
+
+
+    } catch (error) {
+
+        document.getElementById(
+            "studentList"
+        ).innerHTML =
+            `<div class="error">
+                Cannot connect to backend.
+            </div>`;
+    }
+}
+
+
+loadStudents();
+
+</script>
+
+</body>
+
+</html>

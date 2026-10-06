@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Student Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+<body>
+
+<nav class="navbar">
+
+    <h2>IEEE CIS</h2>
+
+    <div>
+
+        <a href="student-dashboard.html">
+            My Attendance
+        </a>
+
+        <a href="#" onclick="logout()">
+            Logout
+        </a>
+
+    </div>
+
+</nav>
+
+
+<div class="container">
+
+    <div class="card">
+
+        <h1>Student Dashboard</h1>
+
+        <h2 id="studentName">
+            Loading...
+        </h2>
+
+        <p>
+            Attendance ID:
+            <strong id="studentId">
+                -
+            </strong>
+        </p>
+
+        <p>
+            Roll No:
+            <strong id="rollNo">
+                -
+            </strong>
+        </p>
+
+        <p>
+            Section:
+            <strong id="section">
+                -
+            </strong>
+        </p>
+
+        <p>
+            Branch:
+            <strong id="branch">
+                -
+            </strong>
+        </p>
+
+        <p>
+            Email:
+            <strong id="email">
+                -
+            </strong>
+        </p>
+
+    </div>
+
+
+    <div class="qr-result">
+
+        <h2>My Permanent QR</h2>
+
+        <img
+            id="myQR"
+            alt="My QR"
+        >
+
+        <p>
+            This QR belongs to you permanently.
+        </p>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>My Attendance</h2>
+
+        <div id="attendance">
+            Loading attendance...
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const API_URL =
+    "http://127.0.0.1:8000";
+
+
+const TOKEN =
+    sessionStorage.getItem("authToken");
+
+const ROLE =
+    sessionStorage.getItem("userRole");
+
+
+const USER_ID =
+    sessionStorage.getItem("userId");
+
+
+if (
+    !TOKEN ||
+    ROLE !== "STUDENT"
+) {
+
+    window.location.href =
+        "index.html";
+}
+
+
+/* LOAD PROFILE */
+
+async function loadProfile() {
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/my-profile`,
+                {
+                    headers: {
+                        "Authorization":
+                            `Bearer ${TOKEN}`
+                    }
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Could not load profile."
+            );
+        }
+
+
+        document.getElementById(
+            "studentName"
+        ).textContent =
+            data.name;
+
+
+        document.getElementById(
+            "studentId"
+        ).textContent =
+            data.student_id;
+
+
+        document.getElementById(
+            "rollNo"
+        ).textContent =
+            data.roll_no;
+
+
+        document.getElementById(
+            "section"
+        ).textContent =
+            data.section;
+
+
+        document.getElementById(
+            "branch"
+        ).textContent =
+            data.branch;
+
+
+        document.getElementById(
+            "email"
+        ).textContent =
+            data.email;
+
+
+        document.getElementById(
+            "myQR"
+        ).src =
+            `${API_URL}/qr/${data.student_id}`;
+
+
+    } catch (error) {
+
+        alert(error.message);
+    }
+}
+
+
+/* LOAD ATTENDANCE */
+
+async function loadAttendance() {
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/my-attendance`,
+                {
+                    headers: {
+                        "Authorization":
+                            `Bearer ${TOKEN}`
+                    }
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Could not load attendance."
+            );
+        }
+
+
+        const container =
+            document.getElementById(
+                "attendance"
+            );
+
+
+        if (!data.length) {
+
+            container.innerHTML =
+                `<div class="warning">
+                    No attendance records yet.
+                </div>`;
+
+            return;
+        }
+
+
+        container.innerHTML =
+            data.map(item => `
+
+                <div class="attendance-row">
+
+                    <div>
+
+                        <strong>
+                            ${item.event}
+                        </strong>
+
+                        <br>
+
+                        Date:
+                        ${item.date}
+
+                        <br>
+
+                        Time:
+                        ${item.time}
+
+                    </div>
+
+                    <strong>
+                        ${item.status}
+                    </strong>
+
+                </div>
+
+            `).join("");
+
+
+    } catch (error) {
+
+        document.getElementById(
+            "attendance"
+        ).innerHTML =
+            `<div class="error">
+                ${error.message}
+            </div>`;
+    }
+}
+
+
+/* LOGOUT */
+
+async function logout() {
+
+    try {
+
+        await fetch(
+            `${API_URL}/logout`,
+            {
+                method: "POST",
+
+                headers: {
+                    "Authorization":
+                        `Bearer ${TOKEN}`
+                }
+            }
+        );
+
+    } catch (error) {}
+
+    sessionStorage.clear();
+
+    window.location.href =
+        "index.html";
+}
+
+
+loadProfile();
+
+loadAttendance();
+
+</script>
+
+</body>
+</html>

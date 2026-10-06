@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Excel data
+backend/attendance.xlsx
+backend/data/*.xlsx
+
+# Generated QR codes
+backend/qr_codes/*
+
+# Environment files
+.env

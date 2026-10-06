@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>QR Scanner</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+</head>
+
+<body>
+
+<nav class="navbar">
+
+    <h2>IEEE CIS</h2>
+
+    <div>
+
+        <a href="dashboard.html">
+            Dashboard
+        </a>
+
+        <a href="#" onclick="logout()">
+            Logout
+        </a>
+
+    </div>
+
+</nav>
+
+
+<div class="container">
+
+    <div class="card">
+
+        <h1>QR Attendance Scanner</h1>
+
+        <p>
+            Event:
+            <strong id="eventName">
+                -
+            </strong>
+        </p>
+
+        <p>
+            Session:
+            <strong id="sessionId">
+                -
+            </strong>
+        </p>
+
+    </div>
+
+
+    <div class="scanner">
+
+        <div id="reader"></div>
+
+    </div>
+
+
+    <div
+        id="result"
+        class="card"
+    >
+        Waiting for QR...
+    </div>
+
+
+    <div class="card">
+
+        <h3>
+            Attendance Instructions
+        </h3>
+
+        <p>
+            Keep the camera open.
+        </p>
+
+        <p>
+            Scan one student's QR.
+        </p>
+
+        <p>
+            After it says Done, immediately scan the next QR.
+        </p>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const API_URL =
+    "http://127.0.0.1:8000";
+
+
+const TOKEN =
+    sessionStorage.getItem("authToken");
+
+const ROLE =
+    sessionStorage.getItem("userRole");
+
+
+const SESSION_ID =
+    sessionStorage.getItem("sessionId");
+
+const SESSION_EVENT =
+    sessionStorage.getItem("sessionEvent");
+
+
+if (
+    !TOKEN ||
+    (
+        ROLE !== "HEAD" &&
+        ROLE !== "SESSION_CREATOR"
+    )
+) {
+
+    window.location.href =
+        "index.html";
+}
+
+
+if (!SESSION_ID) {
+
+    alert(
+        "Please create an attendance session first."
+    );
+
+    window.location.href =
+        "dashboard.html";
+}
+
+
+document.getElementById(
+    "eventName"
+).textContent =
+    SESSION_EVENT || "-";
+
+
+document.getElementById(
+    "sessionId"
+).textContent =
+    SESSION_ID || "-";
+
+
+let processing = false;
+
+let lastToken = "";
+
+let lastScanTime = 0;
+
+
+/* QR SCANNED */
+
+async function onScanSuccess(decodedText) {
+
+    if (processing) {
+        return;
+    }
+
+
+    const now =
+        Date.now();
+
+
+    /*
+       Prevent same QR from being processed
+       repeatedly by the camera for 2 seconds.
+    */
+
+    if (
+        decodedText === lastToken &&
+        now - lastScanTime < 2000
+    ) {
+
+        return;
+    }
+
+
+    processing = true;
+
+    lastToken = decodedText;
+
+    lastScanTime = now;
+
+
+    const result =
+        document.getElementById(
+            "result"
+        );
+
+
+    result.innerHTML =
+        `<div class="warning">
+            Processing attendance...
+        </div>`;
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${API_URL}/attendance`,
+                {
+                    method: "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json",
+
+                        "Authorization":
+                            `Bearer ${TOKEN}`
+                    },
+
+                    body: JSON.stringify({
+
+                        session_id:
+                            SESSION_ID,
+
+                        qr_token:
+                            decodedText
+
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Attendance failed."
+            );
+        }
+
+
+        if (data.duplicate) {
+
+            result.innerHTML =
+                `<div class="warning">
+                    ⚠️ ${data.message}
+                </div>`;
+
+        } else {
+
+            result.innerHTML =
+                `<div class="success">
+
+                    <h2>
+                        ✓ Attendance Done
+                    </h2>
+
+                    <strong>
+                        ${data.student.name}
+                    </strong>
+
+                    <br>
+
+                    Roll No:
+                    ${data.student.roll_no}
+
+                    <br>
+
+                    Section:
+                    ${data.student.section}
+
+                    <br>
+
+                    Branch:
+                    ${data.student.branch}
+
+                </div>`;
+        }
+
+
+        /*
+           VERY IMPORTANT:
+
+           We do NOT stop the camera.
+           We do NOT clear the scanner.
+           We simply unlock scanning again.
+        */
+
+        setTimeout(() => {
+
+            processing = false;
+
+        }, 500);
+
+
+    } catch (error) {
+
+        console.error(error);
+
+
+        result.innerHTML =
+            `<div class="error">
+                ❌ ${error.message}
+            </div>`;
+
+
+        setTimeout(() => {
+
+            processing = false;
+
+        }, 700);
+    }
+}
+
+
+/* QR ERROR */
+
+function onScanFailure(errorMessage) {
+
+    /*
+       Ignore normal camera scanning failures.
+       html5-qrcode calls this continuously.
+    */
+
+}
+
+
+/* START CAMERA */
+
+const scanner =
+    new Html5QrcodeScanner(
+        "reader",
+        {
+            fps: 15,
+
+            qrbox: {
+                width: 280,
+                height: 280
+            },
+
+            rememberLastUsedCamera: true,
+
+            showTorchButtonIfSupported: true,
+
+            showZoomSliderIfSupported: true
+        },
+        false
+    );
+
+
+scanner.render(
+    onScanSuccess,
+    onScanFailure
+);
+
+
+/* LOGOUT */
+
+async function logout() {
+
+    try {
+
+        await fetch(
+            `${API_URL}/logout`,
+            {
+                method: "POST",
+
+                headers: {
+                    "Authorization":
+                        `Bearer ${TOKEN}`
+                }
+            }
+        );
+
+    } catch (error) {}
+
+    sessionStorage.clear();
+
+    window.location.href =
+        "index.html";
+}
+
+</script>
+
+</body>
+</html>

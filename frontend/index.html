@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>IEEE CIS Attendance Login</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="card">
+
+        <h1>IEEE CIS Attendance</h1>
+
+        <p style="text-align:center;">
+            Login to continue
+        </p>
+
+        <input
+            type="text"
+            id="userId"
+            placeholder="Attendance ID / User ID"
+        >
+
+        <input
+            type="password"
+            id="password"
+            placeholder="Password"
+        >
+
+        <button
+            onclick="login()"
+            style="width:100%;"
+        >
+            Login
+        </button>
+
+        <div id="message"></div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const API_URL = "http://127.0.0.1:8000";
+
+
+async function login() {
+
+    const userId =
+        document.getElementById("userId").value.trim();
+
+    const password =
+        document.getElementById("password").value;
+
+    const message =
+        document.getElementById("message");
+
+
+    if (!userId || !password) {
+
+        message.innerHTML = `
+            <div class="error">
+                Enter User ID and Password.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    message.innerHTML = `
+        <div class="warning">
+            Connecting to backend...
+        </div>
+    `;
+
+
+    try {
+
+        const response = await fetch(
+            `${API_URL}/login`,
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    user_id: userId,
+                    password: password
+                })
+            }
+        );
+
+
+        const data = await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail || "Login failed."
+            );
+
+        }
+
+
+        /* SAVE LOGIN INFORMATION */
+
+        sessionStorage.setItem(
+            "authToken",
+            data.token
+        );
+
+        sessionStorage.setItem(
+            "userId",
+            data.user_id
+        );
+
+        sessionStorage.setItem(
+            "userName",
+            data.name
+        );
+
+        sessionStorage.setItem(
+            "userRole",
+            data.role
+        );
+
+
+        message.innerHTML = `
+            <div class="success">
+                Login successful. Opening dashboard...
+            </div>
+        `;
+
+
+        /* ROLE-BASED REDIRECT */
+
+        setTimeout(() => {
+
+            if (data.role === "STUDENT") {
+
+                // Student goes to Student Dashboard
+                window.location.href =
+                    "student-dashboard.html";
+
+            } else {
+
+                // Head and Session Creator go to normal dashboard
+                window.location.href =
+                    "dashboard.html";
+
+            }
+
+        }, 500);
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        message.innerHTML = `
+            <div class="error">
+                ❌ ${error.message}
+                <br><br>
+                Make sure the backend is running.
+            </div>
+        `;
+
+    }
+
+}
+
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Register Student</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<nav class="navbar">
+
+    <h2>IEEE CIS</h2>
+
+    <div>
+
+        <a href="dashboard.html">
+            Dashboard
+        </a>
+
+        <a href="admin.html">
+            Register Student
+        </a>
+
+        <a href="students.html">
+            Students
+        </a>
+
+        <a href="scanner.html">
+            Scan QR
+        </a>
+
+        <a href="#" onclick="logout()">
+            Logout
+        </a>
+
+    </div>
+
+</nav>
+
+
+<div class="container">
+
+    <div class="card">
+
+        <h1>Register Student</h1>
+
+        <p>
+            Head can register students and create their permanent QR.
+        </p>
+
+
+        <input
+            id="studentId"
+            placeholder="Attendance ID / Student ID"
+        >
+
+        <input
+            id="name"
+            placeholder="Student Name"
+        >
+
+        <input
+            id="rollNo"
+            placeholder="Roll No."
+        >
+
+        <input
+            id="section"
+            placeholder="Section"
+        >
+
+        <input
+            id="branch"
+            placeholder="Branch"
+        >
+
+        <input
+            id="email"
+            type="email"
+            placeholder="Email"
+        >
+
+        <input
+            id="password"
+            type="password"
+            placeholder="Create Student Password"
+        >
+
+        <button onclick="registerStudent()">
+            Register Student
+        </button>
+
+        <div id="message"></div>
+
+    </div>
+
+
+    <div
+        id="qrResult"
+        class="qr-result"
+        style="display:none;"
+    >
+
+        <h2>Student Registered Successfully</h2>
+
+        <p>
+            This QR is permanent for this student.
+        </p>
+
+        <img
+            id="qrImage"
+            alt="Student QR"
+        >
+
+        <p id="studentInfo"></p>
+
+        <a
+            id="downloadQR"
+            class="btn"
+            download
+        >
+            Download QR
+        </a>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const API_URL = "http://127.0.0.1:8000";
+
+
+const token =
+    sessionStorage.getItem("authToken");
+
+const role =
+    sessionStorage.getItem("userRole");
+
+
+if (
+    !token ||
+    role !== "HEAD"
+) {
+
+    window.location.href =
+        "index.html";
+}
+
+
+async function registerStudent() {
+
+    const studentId =
+        document.getElementById("studentId").value.trim();
+
+    const name =
+        document.getElementById("name").value.trim();
+
+    const rollNo =
+        document.getElementById("rollNo").value.trim();
+
+    const section =
+        document.getElementById("section").value.trim();
+
+    const branch =
+        document.getElementById("branch").value.trim();
+
+    const email =
+        document.getElementById("email").value.trim();
+
+    const password =
+        document.getElementById("password").value;
+
+
+    const message =
+        document.getElementById("message");
+
+
+    if (
+        !studentId ||
+        !name ||
+        !rollNo ||
+        !section ||
+        !branch ||
+        !email ||
+        !password
+    ) {
+
+        message.innerHTML =
+            `<div class="error">
+                Please fill all fields.
+            </div>`;
+
+        return;
+    }
+
+
+    try {
+
+        const response = await fetch(
+            `${API_URL}/students`,
+            {
+                method: "POST",
+
+                headers: {
+
+                    "Content-Type":
+                        "application/json",
+
+                    "Authorization":
+                        `Bearer ${token}`
+                },
+
+                body: JSON.stringify({
+
+                    student_id: studentId,
+                    name: name,
+                    roll_no: rollNo,
+                    section: section,
+                    branch: branch,
+                    email: email,
+                    password: password
+
+                })
+            }
+        );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.detail ||
+                "Student registration failed."
+            );
+        }
+
+
+        message.innerHTML =
+            `<div class="success">
+                Student registered successfully.
+            </div>`;
+
+
+        const qrUrl =
+            `${API_URL}/qr/${data.student_id}`;
+
+
+        document.getElementById(
+            "qrImage"
+        ).src = qrUrl;
+
+
+        document.getElementById(
+            "downloadQR"
+        ).href = qrUrl;
+
+
+        document.getElementById(
+            "studentInfo"
+        ).innerHTML = `
+            <strong>Name:</strong> ${data.name}<br>
+            <strong>Roll No:</strong> ${data.roll_no}<br>
+            <strong>Section:</strong> ${data.section}<br>
+            <strong>Branch:</strong> ${data.branch}<br>
+            <strong>Attendance ID:</strong> ${data.student_id}
+        `;
+
+
+        document.getElementById(
+            "qrResult"
+        ).style.display = "block";
+
+
+        document.getElementById(
+            "studentId"
+        ).value = "";
+
+        document.getElementById(
+            "name"
+        ).value = "";
+
+        document.getElementById(
+            "rollNo"
+        ).value = "";
+
+        document.getElementById(
+            "section"
+        ).value = "";
+
+        document.getElementById(
+            "branch"
+        ).value = "";
+
+        document.getElementById(
+            "email"
+        ).value = "";
+
+        document.getElementById(
+            "password"
+        ).value = "";
+
+
+    } catch (error) {
+
+        console.error(error);
+
+        message.innerHTML =
+            `<div class="error">
+                ❌ ${error.message}
+            </div>`;
+    }
+}
+
+
+async function logout() {
+
+    try {
+
+        await fetch(
+            `${API_URL}/logout`,
+            {
+                method: "POST",
+
+                headers: {
+                    "Authorization":
+                        `Bearer ${token}`
+                }
+            }
+        );
+
+    } catch (error) {
+
+        console.log(error);
+    }
+
+
+    sessionStorage.clear();
+
+    window.location.href =
+        "index.html";
+}
+
+</script>
+
+</body>
+</html>
